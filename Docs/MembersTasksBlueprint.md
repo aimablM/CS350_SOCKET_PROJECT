@@ -27,10 +27,6 @@
   │   ├── java/
   │   │   ├── server/
   │   │   ├── client/
-  │   │   ├── common/
-  │   │   └── utils/
-  │   └── resources/
-  └── test/
   ```
 - Create development milestones and deadlines
 - Ensure component integration
@@ -172,6 +168,7 @@
 - Create error logging system
 - Implement recovery procedures
 
+
 ## Shared Responsibilities
 
 ### 1. Code Review Process
@@ -196,38 +193,3 @@
 - Feature testing
 - Performance optimization
 - Bug fixing
-
-## Weekly Milestones
-
-### Week 1
-- Basic server implementation
-- Initial GUI layouts
-- Basic message handling
-
-### Week 2
-- Complete server features
-- GUI refinement
-- Initial testing
-
-### Week 3
-- Integration completion
-- Documentation
-- Final testing
-- Wireshark analysis
-
-## Communication Channels
-
-1. **Development Updates**
-   - Daily progress updates
-   - Blocker notifications
-   - Component status reports
-
-2. **Code Reviews**
-   - Pull request reviews
-   - Code quality checks
-   - Documentation reviews
-
-3. **Team Meetings**
-   - Weekly progress reviews
-   - Technical discussions
-   - Issue resolution
