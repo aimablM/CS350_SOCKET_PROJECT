@@ -1,11 +1,11 @@
-package client.serverGUI;
+package client.clientGUI;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class ServerGUI extends JFrame {
+public class clientGUI extends JFrame {
  
-    public ServerGUI() {
+    public clientGUI() {
         super("Simple Example");
         setSize(300, 200);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -32,7 +32,7 @@ public class ServerGUI extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                ServerGUI gui = new ServerGUI();
+                clientGUI gui = new clientGUI();
                 gui.addComponents();
                 gui.setVisible(true);
             }
