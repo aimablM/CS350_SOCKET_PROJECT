@@ -23,7 +23,7 @@ public class ServerGUI extends JFrame {
     private JButton startStopButton;
     
     public ServerGUI() {
-        super("Server GUI Development");
+        super("Socket Chat Server");
         clients = Collections.synchronizedSet(new HashSet<>());
         executorService = Executors.newCachedThreadPool();
         
