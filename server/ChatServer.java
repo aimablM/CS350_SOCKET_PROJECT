@@ -1,39 +1,60 @@
 package server;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+/**
+ * ChatServer implements a multi-threaded chat server using TCP/IP connections.
+ * It manages multiple client connections and broadcasts messages between clients.
+ * This is the core server implementation without GUI components.
+ */
 public class ChatServer {
-    private static final int PORT = 5000;
-    private ServerSocket serverSocket;
-    private boolean isRunning;
-    private ExecutorService executorService;
-    private Set<ClientHandler> clients;
+    // Server configuration
+    private static final int PORT = 5000;        // Default server port
+    private ServerSocket serverSocket;           // Socket for accepting client connections
+    private boolean isRunning;                   // Server status flag
+    private ExecutorService executorService;     // Thread pool for client handlers
+    private Set<ClientHandler> clients;          // Collection of connected clients
 
+    /**
+     * Constructor initializes the server components
+     * Uses CachedThreadPool for dynamic thread management and
+     * synchronized HashSet for thread-safe client tracking
+     */
     public ChatServer() {
+        // Create thread-safe set for client handlers
         this.clients = Collections.synchronizedSet(new HashSet<>());
-        // Create a thread pool that can handle multiple clients
+        // Initialize thread pool that creates new threads as needed
         this.executorService = Executors.newCachedThreadPool();
     }
 
+    /**
+     * Starts the server and begins accepting client connections
+     * Runs in an infinite loop until server is stopped
+     */
     public void start() {
         try {
+            // Create server socket to accept client connections
             serverSocket = new ServerSocket(PORT);
             isRunning = true;
             System.out.println("Server started on port " + PORT);
 
-            // Main server loop
+            // Main server loop - continuously accept new clients
             while (isRunning) {
                 try {
+                    // Accept new client connection
                     Socket clientSocket = serverSocket.accept();
-                    System.out.println("New client connected: " + clientSocket.getInetAddress().getHostAddress());
+                    System.out.println("New client connected: " + 
+                        clientSocket.getInetAddress().getHostAddress());
                     
                     // Create and start a new client handler
                     ClientHandler clientHandler = new ClientHandler(clientSocket);
                     clients.add(clientHandler);
                     executorService.execute(clientHandler);
                 } catch (IOException e) {
+                    // Only log error if server is still meant to be running
                     if (isRunning) {
                         System.err.println("Error accepting client connection: " + e.getMessage());
                     }
@@ -44,6 +65,10 @@ public class ChatServer {
         }
     }
 
+    /**
+     * Stops the server and performs cleanup
+     * Closes all client connections and shuts down the thread pool
+     */
     public void stop() {
         isRunning = false;
         try {
@@ -53,11 +78,14 @@ public class ChatServer {
             }
             clients.clear();
             
-            // Shutdown the executor and server socket
+            // Shutdown the executor service
             executorService.shutdown();
+            // Wait for tasks to complete, then force shutdown
             if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
                 executorService.shutdownNow();
             }
+            
+            // Close the server socket
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
@@ -66,17 +94,28 @@ public class ChatServer {
         }
     }
 
-    // Handler for each client connection
+    /**
+     * Inner class to handle individual client connections
+     * Each instance runs in its own thread and manages communication
+     * with a single client
+     */
     private class ClientHandler implements Runnable {
-        private Socket clientSocket;
-        private PrintWriter out;
-        private BufferedReader in;
-        private String clientName;
+        private Socket clientSocket;         // Client's socket connection
+        private PrintWriter out;             // Output stream to client
+        private BufferedReader in;           // Input stream from client
+        private String clientName;           // Client's username
 
+        /**
+         * Constructor takes the client's socket connection
+         */
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
         }
 
+        /**
+         * Main run method executed in separate thread
+         * Handles the client's connection lifecycle
+         */
         @Override
         public void run() {
             try {
@@ -89,18 +128,28 @@ public class ChatServer {
             }
         }
 
+        /**
+         * Sets up input/output streams and processes initial connection
+         * First message from client is expected to be their username
+         */
         private void setupStreams() throws IOException {
+            // Initialize input/output streams
             out = new PrintWriter(clientSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             
-            // Get client's name
+            // First message is client's username
             clientName = in.readLine();
             broadcastMessage("SERVER: " + clientName + " has joined the chat");
             sendClientList();
         }
 
+        /**
+         * Main message processing loop
+         * Continuously reads and broadcasts client messages
+         */
         private void processClientMessages() throws IOException {
             String message;
+            // Read messages until client disconnects
             while ((message = in.readLine()) != null) {
                 if (message.equals("/quit")) {
                     break;
@@ -109,6 +158,9 @@ public class ChatServer {
             }
         }
 
+        /**
+         * Broadcasts a message to all connected clients except the sender
+         */
         private void broadcastMessage(String message) {
             synchronized (clients) {
                 for (ClientHandler client : clients) {
@@ -119,6 +171,9 @@ public class ChatServer {
             }
         }
 
+        /**
+         * Sends the list of connected users to all clients
+         */
         private void sendClientList() {
             StringBuilder userList = new StringBuilder("Connected users: ");
             synchronized (clients) {
@@ -129,10 +184,16 @@ public class ChatServer {
             broadcastMessage(userList.toString());
         }
 
+        /**
+         * Sends a message to this specific client
+         */
         public void sendMessage(String message) {
             out.println(message);
         }
 
+        /**
+         * Closes the client connection and performs cleanup
+         */
         public void close() {
             try {
                 clients.remove(this);
@@ -148,11 +209,14 @@ public class ChatServer {
         }
     }
 
-    // Main method to start the server
+    /**
+     * Main method to start the server
+     * Includes shutdown hook for graceful server shutdown
+     */
     public static void main(String[] args) {
         ChatServer server = new ChatServer();
         
-        // Add shutdown hook for graceful shutdown
+        // Add shutdown hook for graceful shutdown on program termination
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down server...");
             server.stop();

@@ -7,37 +7,53 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+/**
+ * ServerGUI provides a graphical interface for managing a chat server.
+ * This class handles both the GUI components and the server networking functionality.
+ * It allows monitoring of connected clients, server status, and message logs.
+ */
 public class ServerGUI extends JFrame {
+    // Default port for the chat server
     private static final int DEFAULT_PORT = 5000;
-    private ServerSocket serverSocket;
-    private boolean isRunning;
-    private ExecutorService executorService;
-    private Set<ClientHandler> clients;
+    
+    // Core server components
+    private ServerSocket serverSocket;        // Handles incoming client connections
+    private boolean isRunning;                // Server status flag
+    private ExecutorService executorService;  // Thread pool for client handlers
+    private Set<ClientHandler> clients;       // Set of connected clients
     
     // GUI Components
-    private JLabel statusLabel;
-    private JPanel clientListPanel;
-    private JTextArea logArea;
-    private JTextField serverIPField;
-    private JTextField portField;
-    private JButton startStopButton;
+    private JLabel statusLabel;               // Displays server status (running/stopped)
+    private JPanel clientListPanel;           // Shows list of connected clients
+    private JTextArea logArea;                // Displays server events and messages
+    private JTextField serverIPField;         // Shows server's IP address
+    private JTextField portField;             // Shows/allows port configuration
+    private JButton startStopButton;          // Controls server start/stop
     
+    /**
+     * Constructor initializes the server GUI and core components
+     */
     public ServerGUI() {
         super("Socket Chat Server");
+        // Initialize synchronized set for thread-safe client management
         clients = Collections.synchronizedSet(new HashSet<>());
+        // Create thread pool that grows/shrinks based on demand
         executorService = Executors.newCachedThreadPool();
         
         setLayout(new BorderLayout());
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        initComponents();
-        setupActions();
+        initComponents();     // Setup GUI components
+        setupActions();       // Setup event handlers
         setVisible(true);
     }
     
+    /**
+     * Initializes and arranges all GUI components
+     */
     private void initComponents() {
-        // Server Status Panel
+        // Server Status Panel - Shows current server state and control button
         JPanel serverStatusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         serverStatusPanel.setBorder(BorderFactory.createTitledBorder("Server Status"));
         statusLabel = new JLabel("Server is stopped");
@@ -45,13 +61,13 @@ public class ServerGUI extends JFrame {
         serverStatusPanel.add(statusLabel);
         serverStatusPanel.add(startStopButton);
         
-        // Client List Panel
+        // Client List Panel - Shows connected clients
         clientListPanel = new JPanel();
         clientListPanel.setBorder(BorderFactory.createTitledBorder("Client List"));
         clientListPanel.setLayout(new BoxLayout(clientListPanel, BoxLayout.Y_AXIS));
         clientListPanel.setPreferredSize(new Dimension(200, 0));
         
-        // Log Panel
+        // Log Panel - Shows server events and message history
         JPanel logPanel = new JPanel(new BorderLayout());
         logPanel.setBorder(BorderFactory.createTitledBorder("Logs"));
         logArea = new JTextArea();
@@ -60,10 +76,11 @@ public class ServerGUI extends JFrame {
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         logPanel.add(scrollPane, BorderLayout.CENTER);
         
-        // Configuration Panel
+        // Configuration Panel - Shows server IP and port settings
         JPanel configPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         configPanel.setBorder(BorderFactory.createTitledBorder("Configuration"));
         
+        // Get and display local IP address
         try {
             String localIP = InetAddress.getLocalHost().getHostAddress();
             serverIPField = new JTextField(localIP);
@@ -79,14 +96,18 @@ public class ServerGUI extends JFrame {
         configPanel.add(new JLabel("Port:"));
         configPanel.add(portField);
         
-        // Add all panels to frame
+        // Arrange panels in the frame
         add(serverStatusPanel, BorderLayout.NORTH);
         add(clientListPanel, BorderLayout.WEST);
         add(logPanel, BorderLayout.CENTER);
         add(configPanel, BorderLayout.SOUTH);
     }
     
+    /**
+     * Sets up event handlers for GUI components
+     */
     private void setupActions() {
+        // Toggle server start/stop when button is clicked
         startStopButton.addActionListener(e -> {
             if (!isRunning) {
                 startServer();
@@ -95,7 +116,7 @@ public class ServerGUI extends JFrame {
             }
         });
         
-        // Window closing event
+        // Ensure clean shutdown when window is closed
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -104,6 +125,9 @@ public class ServerGUI extends JFrame {
         });
     }
     
+    /**
+     * Starts the server and begins accepting client connections
+     */
     private void startServer() {
         try {
             int port = Integer.parseInt(portField.getText().trim());
@@ -115,7 +139,7 @@ public class ServerGUI extends JFrame {
             startStopButton.setText("Stop Server");
             portField.setEnabled(false);
             
-            // Start accepting clients in a separate thread
+            // Accept client connections in a separate thread
             new Thread(() -> {
                 while (isRunning) {
                     try {
@@ -123,6 +147,7 @@ public class ServerGUI extends JFrame {
                         String clientIP = clientSocket.getInetAddress().getHostAddress();
                         log("New client connected: " + clientIP);
                         
+                        // Create and start new client handler
                         ClientHandler clientHandler = new ClientHandler(clientSocket);
                         clients.add(clientHandler);
                         executorService.execute(clientHandler);
@@ -141,20 +166,26 @@ public class ServerGUI extends JFrame {
         }
     }
     
+    /**
+     * Stops the server and closes all client connections
+     */
     private void stopServer() {
         isRunning = false;
         try {
+            // Close all client connections
             for (ClientHandler client : clients) {
                 client.close();
             }
             clients.clear();
             updateClientList();
             
+            // Shutdown thread pool
             executorService.shutdown();
             if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
                 executorService.shutdownNow();
             }
             
+            // Close server socket
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
@@ -169,6 +200,9 @@ public class ServerGUI extends JFrame {
         }
     }
     
+    /**
+     * Updates the GUI client list panel
+     */
     private void updateClientList() {
         SwingUtilities.invokeLater(() -> {
             clientListPanel.removeAll();
@@ -182,6 +216,9 @@ public class ServerGUI extends JFrame {
         });
     }
     
+    /**
+     * Adds a message to the log area
+     */
     private void log(String message) {
         SwingUtilities.invokeLater(() -> {
             logArea.append(message + "\n");
@@ -189,12 +226,15 @@ public class ServerGUI extends JFrame {
         });
     }
     
+    /**
+     * Inner class that handles individual client connections
+     */
     private class ClientHandler implements Runnable {
-        private Socket clientSocket;
-        private PrintWriter out;
-        private BufferedReader in;
-        private String clientName;
-        private String clientIP;
+        private Socket clientSocket;          // Client's socket connection
+        private PrintWriter out;              // Output stream to client
+        private BufferedReader in;            // Input stream from client
+        private String clientName;            // Client's username
+        private String clientIP;              // Client's IP address
         
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
@@ -217,10 +257,14 @@ public class ServerGUI extends JFrame {
             }
         }
         
+        /**
+         * Sets up input/output streams and processes initial client connection
+         */
         private void setupStreams() throws IOException {
             out = new PrintWriter(clientSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             
+            // First message from client is their username
             clientName = in.readLine();
             String joinMessage = "SERVER: " + clientName + " has joined the chat";
             broadcastMessage(joinMessage);
@@ -228,6 +272,9 @@ public class ServerGUI extends JFrame {
             sendClientList();
         }
         
+        /**
+         * Main message processing loop
+         */
         private void processClientMessages() throws IOException {
             String message;
             while ((message = in.readLine()) != null) {
@@ -240,6 +287,9 @@ public class ServerGUI extends JFrame {
             }
         }
         
+        /**
+         * Sends a message to all connected clients except the sender
+         */
         private void broadcastMessage(String message) {
             synchronized (clients) {
                 for (ClientHandler client : clients) {
@@ -250,6 +300,9 @@ public class ServerGUI extends JFrame {
             }
         }
         
+        /**
+         * Sends the list of connected users to all clients
+         */
         private void sendClientList() {
             StringBuilder userList = new StringBuilder("Connected users: ");
             synchronized (clients) {
@@ -260,10 +313,16 @@ public class ServerGUI extends JFrame {
             broadcastMessage(userList.toString());
         }
         
+        /**
+         * Sends a message to this client
+         */
         public void sendMessage(String message) {
             out.println(message);
         }
         
+        /**
+         * Closes the client connection and performs cleanup
+         */
         public void close() {
             try {
                 clients.remove(this);
@@ -280,6 +339,9 @@ public class ServerGUI extends JFrame {
         }
     }
     
+    /**
+     * Main method to start the server application
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(ServerGUI::new);
     }
