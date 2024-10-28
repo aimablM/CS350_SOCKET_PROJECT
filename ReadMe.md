@@ -121,19 +121,7 @@ To test the system:
 5. Verify message delivery to all other clients
 6. Test disconnection and reconnection
 7. Monitor server logs for activity
-e
-## Known Issues
-- Evan's contribution pending for network protocol implementation
-- Additional testing needed for high user loads
-- User authentication not yet implemented
 
-## Future Improvements
-- Private messaging capability
-- User authentication system
-- File transfer support
-- Emoji support
-- Message history persistence
-- Advanced server configuration options
 
 ## Project Status
 - Basic functionality implemented and working
@@ -141,23 +129,6 @@ e
 - Testing in progress
 - Documentation ongoing
 
-## Contributing
-Contact Aimable (Team Leader) for:
-- Code review requests
-- Feature suggestions
-- Bug reports
-- Documentation updates
-
-## Assignment Requirements Checklist
-- [x] GUI implementation for both client and server
-- [x] TCP socket communication
-- [x] Multi-client support
-- [x] Message relay functionality
-- [x] Client tracking
-- [x] Error handling
-- [ ] Wireshark analysis (pending)
-- [ ] API documentation (pending)
-- [ ] Final testing (in progress)
 
 ## Additional Notes
 - Server IP and port configuration can be modified in the server GUI
