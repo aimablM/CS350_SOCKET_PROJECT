@@ -121,7 +121,7 @@ To test the system:
 5. Verify message delivery to all other clients
 6. Test disconnection and reconnection
 7. Monitor server logs for activity
-
+e
 ## Known Issues
 - Evan's contribution pending for network protocol implementation
 - Additional testing needed for high user loads
